@@ -1,6 +1,7 @@
 package com.xr.interaction.festival_alone
 
 import android.graphics.Color
+import android.media.ImageReader
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
@@ -9,12 +10,16 @@ import android.widget.Toast
 import com.google.ar.sceneform.AnchorNode
 
 import com.google.ar.sceneform.rendering.ModelRenderable
+import com.google.ar.sceneform.rendering.Renderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import com.xr.interaction.festival_alone.databinding.ActivityMainBinding
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
+
+    lateinit var arrayView: Array<View>
+
     lateinit var image0Renderable: ModelRenderable
     lateinit var image1Renderable: ModelRenderable
     lateinit var image2Renderable: ModelRenderable
@@ -26,8 +31,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
     internal var seleted = 1
-
     lateinit var arFragment: ArFragment
+
     override fun onClick(view: View?) {
         if(view !!.id == R.id.image0) {
             seleted = 1
@@ -57,7 +62,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             seleted = 7
             mySetBackGround(view!!.id)
         }
-        else if (view !!.id == R.id.image7) {
+        else  {
             seleted = 8
             mySetBackGround(view!!.id)
         }
@@ -66,17 +71,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
 
-    private lateinit var binding: ActivityMainBinding
-    lateinit var arrayView: Array<ImageView>
 
+    private lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupArray()
-        setupClickListener()
-        setUpModel()
+
 
         arFragment = supportFragmentManager.findFragmentById(R.id.scene_from_fragment) as ArFragment
         arFragment.setOnTapArPlaneListener{hitResult, plane, motionEvent ->
@@ -84,15 +86,27 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val anchorNode = AnchorNode(anchor)
             anchorNode.setParent(arFragment.arSceneView.scene)
 
-            createModel(anchorNode, seleted)
+            val bear = TransformableNode(arFragment.transformationSystem)
+            bear.setParent(anchorNode)
+           // bear.renderable = image0Renderable
+            bear.select()
+
+            //createModel(anchorNode, seleted)
         }
+        setupArray()
+        setupClickListener()
+        setUpModel()
+
     }
 
-    private fun createModel(anchorNode: AnchorNode, seleted: Int) {
-        val bear = TransformableNode(arFragment.transformationSystem)
-        bear.setParent(anchorNode)
-        bear.renderable = image0Renderable
-        bear.select()
+    private fun createModel(anchorNode: AnchorNode, selected: Int) {
+        if(selected == 1) {
+            val bear = TransformableNode(arFragment.transformationSystem)
+            bear.setParent(anchorNode)
+            bear.renderable = image0Renderable
+            bear.select()
+        }
+
 
     }
 
@@ -126,7 +140,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun setUpModel() {
-        ModelRenderable.builder().setSource(this, R.drawable.asset1)
+
+
+        ModelRenderable.builder()
+            .setSource(this, R.drawable.asset1)
             .build()
             .thenAccept { modelRenderable -> image0Renderable = modelRenderable }
             .exceptionally { throwalbe ->
