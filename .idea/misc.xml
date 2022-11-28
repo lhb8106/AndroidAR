@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/82104/AndroidAR/app/src/main/res/layout/activity_ar_test.xml" value="0.1" />
         <entry key="..\:/Users/82104/AndroidAR/app/src/main/res/layout/activity_main.xml" value="0.21041666666666667" />
+        <entry key="..\:/Users/82104/AndroidAR/app/src/main/res/layout/activity_test.xml" value="0.1" />
+        <entry key="..\:/Users/82104/AppData/Local/Android/Sdk/platforms/android-32/data/res/layout/activity_list_item.xml" value="0.1" />
       </map>
     </option>
   </component>
