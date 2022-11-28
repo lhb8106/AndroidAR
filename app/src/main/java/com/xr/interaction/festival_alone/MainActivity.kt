@@ -1,208 +1,90 @@
 package com.xr.interaction.festival_alone
 
-import android.graphics.Color
-import android.media.ImageReader
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.view.View
-import android.widget.ImageView
-import android.widget.Toast
-import com.google.ar.sceneform.AnchorNode
 
+import android.app.Activity
+import android.app.ActivityManager
+import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.util.Log
+import android.view.Gravity
+import android.view.MotionEvent
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.google.ar.core.Anchor
+import com.google.ar.core.HitResult
+import com.google.ar.core.Plane
+import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.rendering.ModelRenderable
-import com.google.ar.sceneform.rendering.Renderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
-import com.xr.interaction.festival_alone.databinding.ActivityMainBinding
+import java.util.function.Consumer
+import java.util.function.Function
 
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
-
-    lateinit var arrayView: Array<View>
-
-    lateinit var image0Renderable: ModelRenderable
-    lateinit var image1Renderable: ModelRenderable
-    lateinit var image2Renderable: ModelRenderable
-    lateinit var image3Renderable: ModelRenderable
-    lateinit var image4Renderable: ModelRenderable
-    lateinit var image5Renderable: ModelRenderable
-    lateinit var image6Renderable: ModelRenderable
-    lateinit var image7Renderable: ModelRenderable
-
-
-    internal var seleted = 1
-    lateinit var arFragment: ArFragment
-
-    override fun onClick(view: View?) {
-        if(view !!.id == R.id.image0) {
-            seleted = 1
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image1) {
-            seleted = 2
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image2) {
-            seleted = 3
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image3) {
-            seleted = 4
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image4) {
-            seleted = 5
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image5) {
-            seleted = 6
-            mySetBackGround(view!!.id)
-        }
-        else if (view !!.id == R.id.image6) {
-            seleted = 7
-            mySetBackGround(view!!.id)
-        }
-        else  {
-            seleted = 8
-            mySetBackGround(view!!.id)
-        }
-
-    }
-
-
-
-
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : AppCompatActivity() {
+    private var arFragment: ArFragment? = null
+    private var andyRenderable: ModelRenderable? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-
-
-        arFragment = supportFragmentManager.findFragmentById(R.id.scene_from_fragment) as ArFragment
-        arFragment.setOnTapArPlaneListener{hitResult, plane, motionEvent ->
-            val anchor = hitResult.createAnchor()
-            val anchorNode = AnchorNode(anchor)
-            anchorNode.setParent(arFragment.arSceneView.scene)
-
-            val bear = TransformableNode(arFragment.transformationSystem)
-            bear.setParent(anchorNode)
-           // bear.renderable = image0Renderable
-            bear.select()
-
-            //createModel(anchorNode, seleted)
-        }
-        setupArray()
-        setupClickListener()
-        setUpModel()
-
-    }
-
-    private fun createModel(anchorNode: AnchorNode, selected: Int) {
-        if(selected == 1) {
-            val bear = TransformableNode(arFragment.transformationSystem)
-            bear.setParent(anchorNode)
-            bear.renderable = image0Renderable
-            bear.select()
+        // AR 사용 가능 여부 체크
+        if (!checkIsSupportedDeviceOrFinish(this)) {
+            return
         }
 
-
-    }
-
-    private fun mySetBackGround(id : Int) {
-        for(i in arrayView.indices) {
-            if(arrayView[i].id == id)
-                arrayView[i].setBackgroundColor(Color.parseColor("#80333639"))
-            else
-                arrayView[i].setBackgroundColor(Color.TRANSPARENT)
-        }
-    }
-
-
-    private fun setupArray() {
-        arrayView = arrayOf(
-            binding.image0,
-            binding.image1,
-            binding.image2,
-            binding.image3,
-            binding.image4,
-            binding.image5,
-            binding.image6,
-            binding.image7
-        )
-    }
-
-    private fun setupClickListener() {
-        for (i in arrayView.indices) {
-            arrayView[i].setOnClickListener(this)
-        }
-    }
-
-    private fun setUpModel() {
-
-
+        setContentView(R.layout.activity_main)
+        arFragment = supportFragmentManager.findFragmentById(R.id.ux_fragment) as ArFragment?
         ModelRenderable.builder()
-            .setSource(this, R.drawable.asset1)
+            .setSource(this, Uri.parse("asset1.png"))
             .build()
-            .thenAccept { modelRenderable -> image0Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
+            .thenAccept(Consumer { renderable: ModelRenderable? ->
+                andyRenderable = renderable
+            })
+            .exceptionally(
+                Function<Throwable, Void?> { throwable: Throwable? ->
+                    val toast =
+                        Toast.makeText(this, "andy renderable을 불러올 수 없습니다", Toast.LENGTH_LONG)
+                    toast.setGravity(Gravity.CENTER, 0, 0)
+                    toast.show()
+                    null
+                })
 
-        ModelRenderable.builder().setSource(this, R.drawable.asset11)
-            .build()
-            .thenAccept { modelRenderable -> image1Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
+        // 화면을 탭해서 3D 객체 생성
+        arFragment!!.setOnTapArPlaneListener { hitResult: HitResult, plane: Plane?, motionEvent: MotionEvent? ->
+            if (andyRenderable == null) {
+                return@setOnTapArPlaneListener
             }
-
-        ModelRenderable.builder().setSource(this, R.drawable.asset12)
-            .build()
-            .thenAccept { modelRenderable -> image2Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
-
-        ModelRenderable.builder().setSource(this, R.drawable.asset13)
-            .build()
-            .thenAccept { modelRenderable -> image3Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
-        ModelRenderable.builder().setSource(this, R.drawable.asset14)
-            .build()
-            .thenAccept { modelRenderable -> image4Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
-        ModelRenderable.builder().setSource(this, R.drawable.asset15)
-            .build()
-            .thenAccept { modelRenderable -> image5Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
-        ModelRenderable.builder().setSource(this, R.drawable.asset16)
-            .build()
-            .thenAccept { modelRenderable -> image6Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
-        ModelRenderable.builder().setSource(this, R.drawable.asset17)
-            .build()
-            .thenAccept { modelRenderable -> image7Renderable = modelRenderable }
-            .exceptionally { throwalbe ->
-                Toast.makeText(this@MainActivity, "can't load", Toast.LENGTH_SHORT).show()
-                null
-            }
+            val anchor: Anchor = hitResult.createAnchor()
+            val anchorNode = AnchorNode(anchor)
+            anchorNode.setParent(arFragment!!.arSceneView.scene)
+            val andy =
+                TransformableNode(arFragment!!.transformationSystem)
+            andy.setParent(anchorNode)
+            andy.renderable = andyRenderable
+            andy.select()
+        }
     }
 
-
+    companion object {
+        private val TAG = MainActivity::class.java.simpleName
+        private const val MIN_OPENGL_VERSION = 3.0
+        fun checkIsSupportedDeviceOrFinish(activity: Activity): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                Log.e(TAG, "Sceneform은 누가 버전 이상에서만 사용할 수 있습니다")
+                activity.finish()
+                return false
+            }
+            val openGlVersionString =
+                (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+                    .deviceConfigurationInfo
+                    .glEsVersion
+            if (openGlVersionString.toDouble() < MIN_OPENGL_VERSION) {
+                Log.e(TAG, "Sceneform은 OpenGL ES 3.0 이상 버전을 요구합니다")
+                activity.finish()
+                return false
+            }
+            return true
+        }
+    }
 }
